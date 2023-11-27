@@ -1,36 +1,112 @@
-name: hashicorp/null
+name: wgebis/mailgun
 resources:
-    null_resource:
+    mailgun_domain:
         subCategory: ""
-        description: The null_resource resource implements the standard resource lifecycle but takes no further action. The triggers argument allows specifying an arbitrary set of values that, when changed, will cause the resource to be replaced.
-        name: null_resource
-        title: null_resource Resource - terraform-provider-null
+        name: mailgun_domain
+        title: mailgun_domain
         examples:
-            - name: cluster
+            - name: default
               manifest: |-
                 {
-                  "connection": [
+                  "dkim_key_size": 1024,
+                  "name": "test.example.com",
+                  "region": "us",
+                  "smtp_password": "supersecretpassword1234",
+                  "spam_action": "disabled"
+                }
+        argumentDocs:
+            dkim_key_size: '- (Optional) The length of your domain’s generated DKIM key. Default value is 1024.'
+            dkim_selector: '- (Optional) The name of your DKIM selector if you want to specify it whereas MailGun will make it''s own choice.'
+            force_dkim_authority: '- (Optional) If set to true, the domain will be the DKIM authority for itself even if the root domain is registered on the same mailgun account. If set to false, the domain will have the same DKIM authority as the root domain registered on the same mailgun account. The default is false.'
+            name: '- (Required) The domain to add to Mailgun'
+            open_tracking: '- (Optional) (Enum: yes or no) The open tracking settings for the domain. Default: no'
+            priority: '- The priority of the record.'
+            receiving_records: '- A list of DNS records for receiving validation.  Deprecated Use receiving_records_set instead.'
+            receiving_records_set: '- A set of DNS records for receiving validation.'
+            record_type: '- The record type.'
+            region: '- (Optional) The region where domain will be created. Default value is us.'
+            sending_records: '- A list of DNS records for sending validation. Deprecated Use sending_records_set instead.'
+            sending_records_set: '- A set of DNS records for sending validation.'
+            smtp_login: '- The login email for the SMTP server.'
+            smtp_password: '- (Optional) Password for SMTP authentication'
+            spam_action: |-
+                - (Optional) disabled or tag Disable, no spam
+                filtering will occur for inbound messages. Tag, messages
+                will be tagged with a spam header. Default value is disabled.
+            valid: '- "valid" if the record is valid.'
+            value: '- The value of the record.'
+            wildcard: |-
+                - (Optional) Boolean that determines whether
+                the domain will accept email for sub-domains.
+        importStatements: []
+    mailgun_domain_credential:
+        subCategory: ""
+        name: mailgun_domain_credential
+        title: mailgun_domain
+        examples:
+            - name: foobar
+              manifest: |-
+                {
+                  "domain": "toto.com",
+                  "lifecycle": [
                     {
-                      "host": "${element(aws_instance.cluster.*.public_ip, 0)}"
+                      "ignore_changes": [
+                        "password"
+                      ]
                     }
                   ],
-                  "provisioner": {
-                    "remote-exec": [
-                      {
-                        "inline": [
-                          "bootstrap-cluster.sh ${join(\" \", aws_instance.cluster.*.private_ip)}"
-                        ]
-                      }
-                    ]
-                  },
-                  "triggers": {
-                    "cluster_instance_ids": "${join(\",\", aws_instance.cluster.*.id)}"
-                  }
+                  "login": "test",
+                  "password": "supersecretpassword1234",
+                  "region": "us"
                 }
-              dependencies:
-                aws_instance.cluster: |-
-                    {
-                      "count": 3
-                    }
-        argumentDocs: {}
+        argumentDocs:
+            domain: '- (Required) The domain to add credential of Mailgun.'
+            email: '- The email address.'
+            login: '- (Required) The local-part of the email address to create.'
+            password: '- (Required) Password for user authentication.'
+            region: '- (Optional) The region where domain will be created. Default value is us.'
+        importStatements: []
+    mailgun_route:
+        subCategory: ""
+        name: mailgun_route
+        title: mailgun_route
+        examples:
+            - name: default
+              manifest: |-
+                {
+                  "actions": [
+                    "forward('http://example.com/api/v1/foos/')",
+                    "stop()"
+                  ],
+                  "description": "inbound",
+                  "expression": "match_recipient('.*@foo.example.com')",
+                  "priority": "0"
+                }
+        argumentDocs:
+            action: '- (Required) Route action. This action is executed when the expression evaluates to True. Example: forward("alice@example.com") You can pass multiple action parameters.'
+            description: '- (Required)'
+            expression: '- (Required) A filter expression like match_recipient(''.*@gmail.com'')'
+            priority: '- (Required) Smaller number indicates higher priority. Higher priority routes are handled first.'
+            region: '- (Optional) The region where domain will be created. Default value is us.'
+        importStatements: []
+    mailgun_webhook:
+        subCategory: ""
+        name: mailgun_webhook
+        title: mailgun_webhook
+        examples:
+            - name: default
+              manifest: |-
+                {
+                  "domain": "test.example.com",
+                  "kind": "delivered",
+                  "region": "us",
+                  "urls": [
+                    "https://example.com"
+                  ]
+                }
+        argumentDocs:
+            domain: '- (Required) The domain to add to Mailgun'
+            kind: '- (Required) The kind of webhook. Supported values (clicked complained delivered opened permanent_fail, temporary_fail unsubscribed)'
+            region: '- (Optional) The region where domain will be created. Default value is us.'
+            urls: '- (Required) The urls of webhook'
         importStatements: []

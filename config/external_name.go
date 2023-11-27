@@ -4,13 +4,68 @@ Copyright 2022 Upbound Inc.
 
 package config
 
-import "github.com/crossplane/upjet/pkg/config"
+import (
+	"context"
+	"fmt"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/upjet/pkg/config"
+)
+
+const (
+	// ErrFmtNoAttribute is an error string for not-found attributes
+	ErrFmtNoAttribute = `"attribute not found: %s`
+	// ErrFmtUnexpectedType is an error string for attribute map values of unexpected type
+	ErrFmtUnexpectedType = `unexpected type for attribute %s: Expecting a string`
+)
+
+func region(parameters map[string]any) (string, error) {
+	region, ok := parameters["region"]
+	if !ok {
+		return "", errors.Errorf(ErrFmtNoAttribute, "region")
+	}
+	regionStr, ok := region.(string)
+	if !ok {
+		return "", errors.Errorf(ErrFmtUnexpectedType, "region")
+	}
+	return regionStr, nil
+}
+
+func domain(parameters map[string]any) (string, error) {
+	domain, ok := parameters["domain"]
+	if !ok {
+		return "", errors.Errorf(ErrFmtNoAttribute, "domain")
+	}
+	domainStr, ok := domain.(string)
+	if !ok {
+		return "", errors.Errorf(ErrFmtUnexpectedType, "domain")
+	}
+	return domainStr, nil
+}
+
+var credentialsFromProvider = config.ExternalName{
+	SetIdentifierArgumentFn: config.NopSetIdentifierArgument,
+	GetExternalNameFn:       config.IDAsExternalName,
+	GetIDFn: func(ctx context.Context, externalName string, parameters map[string]any, providerConfig map[string]any) (string, error) {
+		region, err := region(parameters)
+		if err != nil {
+			return region, err
+		}
+		domain, err := domain(parameters)
+		if err != nil {
+			return domain, err
+		}
+
+		return fmt.Sprintf("%s:%s@%s", region, externalName, domain), nil
+	},
+	DisableNameInitializer: true,
+}
 
 // ExternalNameConfigs contains all external name configurations for this
 // provider.
 var ExternalNameConfigs = map[string]config.ExternalName{
 	// Import requires using a randomly generated ID from provider: nl-2e21sda
-	"null_resource": config.IdentifierFromProvider,
+	"mailgun_domain_credential": credentialsFromProvider,
 }
 
 // ExternalNameConfigurations applies all external name configs listed in the

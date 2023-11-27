@@ -1,4 +1,4 @@
-module github.com/upbound/upjet-provider-template
+module saagie.io/provider-mailgun
 
 go 1.19
 
